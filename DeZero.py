@@ -1,6 +1,7 @@
 #This is master file
 import numpy as np
 import weakref
+import contextlib
 
 #class variable has a variable (ex. np.array(2)).
 #Variable class will be called for each variable (x=Variable(np.array(2), y=Variable(np.array(3))))
@@ -22,7 +23,7 @@ class Variable:
     #derivative is calculated for "each variable" (not for function). 
     #Ex. dy/dx is derivative of "x"
     #In this sense, variable class has backward method
-    def backward(self): 
+    def backward(self, retain_grad=False): 
         if self.grad is None: #backprobagation starts from final layer. and derivative of the value itself is 1.
             self.grad=np.ones_like(self.data)
         
@@ -58,6 +59,12 @@ class Variable:
                     add_func(x.creator) #add function to funcs list and sort them (see above).
                     #sort only has meanings when function is like add
 
+            if not retain_grad:
+                for y in f.outputs:
+                    y().grad = None #y has () because y is weakref
+                    #Because user is interested in input variable which is truly target of derivative,
+                    #all f.outputs is ok to be removed after derivative calculation (position of this code is important)
+
     def cleargrad(self):
         self.grad=None #initialize self.grad when you wanna use same variable multiple times.
 
@@ -75,12 +82,13 @@ class Function: #this class is assumed to be succeeded
         if not isinstance(ys, tuple): #ys (output of forward calculation) must be tuple
             ys=(ys,)
         outputs=[Variable(as_array(y)) for y in ys] #outputs could be multiple and they must be list of array
-
-        self.generation=max([x.generation for x in inputs]) #as of Variable class, Function class has generation defined using variable class instance (input)
-        for output in outputs: #output has creator (function)
-            output.set_creator(self) #this set creator of Variable function (Function class does not have creator off course)
-        self.inputs=inputs #function has inputs
-        self.outputs=[weakref.ref(output) for output in outputs] #and outputs
+        
+        if Config.enable_backprop: #when doing derivative, code below will run. This code is because of memory problem
+            self.generation=max([x.generation for x in inputs]) #as of Variable class, Function class has generation defined using variable class instance (input)
+            for output in outputs: #output has creator (function)
+                output.set_creator(self) #this set creator of Variable function (Function class does not have creator off course)
+            self.inputs=inputs #function has inputs
+            self.outputs=[weakref.ref(output) for output in outputs] #and outputs
         return outputs if len(outputs) > 1 else outputs[0] #return outputs (or scalar)
 
     def forward(self,x): #succeeding is needed
@@ -129,4 +137,23 @@ def exp(x):
 
 def add(x0,x1):
     return Add()(x0,x1)
+
+#whether doing derivative or not
+class Config:
+    enable_backprop = True
+
+@contextlib.contextmanager 
+#this decolator make it enable that first preprocess (in this case, #1 and 2, before yield) 
+#next other process (defined by user)
+#finally final process (#3)
+def using_config(name, value):
+    old_value=getattr(Config, name) #1
+    setattr(Config, name, value) #2
+    try:
+        yield
+    finally:
+        setattr(Config, name, old_value) #3
+
+def no_grad(): #util function. Coding "with using_config~~~" is wasteful. (see p130)
+    return using_config('enable_backprop', False)
 
