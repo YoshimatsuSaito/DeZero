@@ -1,4 +1,6 @@
 #This is master file
+import numpy as np
+
 class Variable:
     def __init__(self,data):
         if data is not None:
@@ -27,7 +29,7 @@ class Variable:
 
 
 def as_array(x):
-    if np.isscaler(x):
+    if np.isscalar(x):
         return np.array(x)
     return x
 
@@ -70,6 +72,13 @@ class Exp(Function):
         x=self.input.data
         gx=np.exp(x)*gy
         return gx
+
+class Add(Function):
+    def forward(self, xs):
+        x0,x1=xs
+        y=x0+x1
+        return (y,)
+
 
 def square(x):
     f=Square()
