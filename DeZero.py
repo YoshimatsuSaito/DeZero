@@ -1,5 +1,6 @@
 #This is master file
 import numpy as np
+import weakref
 
 #class variable has a variable (ex. np.array(2)).
 #Variable class will be called for each variable (x=Variable(np.array(2), y=Variable(np.array(3))))
@@ -36,7 +37,7 @@ class Variable:
 
         while funcs: #while len(funcs) > 0. In this loop, all derivative is calculated finally.
             f=funcs.pop() #take function at the particular node. first function is added above.
-            gys=[output.grad for output in f.outputs] 
+            gys=[output().grad for output in f.outputs]  #this weired output() is related to weakref. Meaning is same(=output) 
             #function (named 'f' extracted above) has instance "outputs" defined below. 
             #Depending on function, number of outout could be multiple.
             #Because output is variable instance, that has derivative(grad).
@@ -79,7 +80,7 @@ class Function: #this class is assumed to be succeeded
         for output in outputs: #output has creator (function)
             output.set_creator(self) #this set creator of Variable function (Function class does not have creator off course)
         self.inputs=inputs #function has inputs
-        self.outputs=outputs #and outputs
+        self.outputs=[weakref.ref(output) for output in outputs] #and outputs
         return outputs if len(outputs) > 1 else outputs[0] #return outputs (or scalar)
 
     def forward(self,x): #succeeding is needed
