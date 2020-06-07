@@ -6,13 +6,14 @@ import contextlib
 #class variable has a variable (ex. np.array(2)).
 #Variable class will be called for each variable (x=Variable(np.array(2), y=Variable(np.array(3))))
 class Variable:
-    def __init__(self,data):
+    def __init__(self,data,name=None):
         if data is not None:
             if not isinstance(data, np.ndarray): #data (argument of variable class) must be np.ndarray
                 raise TypeError('{} is not supported'.format(type(data)))
 
         self.data=data #when user set argument (ex.Variable(np.array(3)), Variable class save the value (or vector))
         self.grad=None 
+        self.name=name
         self.creator=None #grad and creator will be defined lator.
         self.generation=0 #At first layer, generation is 0.
 
@@ -67,6 +68,31 @@ class Variable:
 
     def cleargrad(self):
         self.grad=None #initialize self.grad when you wanna use same variable multiple times.
+
+    @property
+    def shape(self):
+        return self.data.shape
+
+    @property
+    def ndim(self):
+        return self.data.ndim
+    
+    @property
+    def size(self):
+        return self.data.size
+
+    @property
+    def dtype(self):
+        return self.data.dtype
+
+    def __len__(self):
+        return len(self.data)
+
+    def __repr__(self):
+        if self.data is None:
+            return 'variable(None)'
+        p=str(self.data).replace('\n', '\n'+' '*9)
+        return 'variable('+p+')'
 
 def as_array(x): #util functon used in Function class
     if np.isscalar(x):
