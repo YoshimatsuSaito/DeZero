@@ -70,11 +70,11 @@ class Variable:
         self.grad=None #initialize self.grad when you wanna use same variable multiple times.
 
     @property
-    def shape(self):
+    def shape(self): #@property make it possible to output like x.shape (not x.shape())
         return self.data.shape
 
     @property
-    def ndim(self):
+    def ndim(self): 
         return self.data.ndim
     
     @property
@@ -85,14 +85,17 @@ class Variable:
     def dtype(self):
         return self.data.dtype
 
-    def __len__(self):
+    def __len__(self): #special method with __func__ related to len function
         return len(self.data)
 
-    def __repr__(self):
+    def __repr__(self): #special method with __func__ related to print function
         if self.data is None:
             return 'variable(None)'
         p=str(self.data).replace('\n', '\n'+' '*9)
         return 'variable('+p+')'
+
+    def __mul__(self,other): #this method should be in Variable class (not outside of this class)
+        return mul(self,other) #this mul method is defined outside of this class (we defined this)
 
 def as_array(x): #util functon used in Function class
     if np.isscalar(x):
@@ -152,6 +155,14 @@ class Add(Function):
     def backward(self,gy):
         return gy,gy
 
+class Mul(Function):
+    def forward(self, x0, x1):
+        y=x0*x1
+        return y
+    
+    def backward(self,gy):
+        x0,x1=self.inputs[0].data, self.inputs[1].data
+        return gy*x1, gy*x0
 
 def square(x): #util function
     f=Square()
@@ -163,6 +174,10 @@ def exp(x):
 
 def add(x0,x1):
     return Add()(x0,x1)
+
+def mul(x0,x1):
+    return Mul()(x0,x1)
+
 
 #whether doing derivative or not
 class Config:
@@ -183,3 +198,5 @@ def using_config(name, value):
 def no_grad(): #util function. Coding "with using_config~~~" is wasteful. (see p130)
     return using_config('enable_backprop', False)
 
+Variable.__mul__=mul
+Variable.__add__=add
