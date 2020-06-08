@@ -17,6 +17,8 @@ class Variable:
         self.creator=None #grad and creator will be defined lator.
         self.generation=0 #At first layer, generation is 0.
 
+    __array_priority__ = 200 #
+
     def set_creator(self,func): #each variable could have creator that is function.
         self.creator=func #This define creator of the variable. This method is called in "Function class". So, func is that Function. 
         self.generation=func.generation+1 #each variable has generation and that is creator's generation + 1.
@@ -106,6 +108,9 @@ def as_array(x): #util functon used in Function class
 class Function: #this class is assumed to be succeeded
     def __call__(self, *inputs): #__call__ function gives method like usage of Function class. 
         #when coding Function(*inputs), this __call__ method works. 
+        
+        inputs=[as_variable(x) for x in inputs]
+        
         xs=[x.data for x in inputs]  #assuming inputs is Variable class instance and multiple argument could be passed (ex. add function)
         ys=self.forward(*xs) #forward calculation is coded in succeeding class (ex. Square)
         if not isinstance(ys, tuple): #ys (output of forward calculation) must be tuple
@@ -173,9 +178,11 @@ def exp(x):
     return f(x)
 
 def add(x0,x1):
+    x1=as_array(x1)
     return Add()(x0,x1)
 
 def mul(x0,x1):
+    x1=as_array(x1)
     return Mul()(x0,x1)
 
 
@@ -198,5 +205,14 @@ def using_config(name, value):
 def no_grad(): #util function. Coding "with using_config~~~" is wasteful. (see p130)
     return using_config('enable_backprop', False)
 
+def as_variable(obj): #util function converting ndarray to Variable instance
+    if isinstance(obj, Variable):
+        return obj
+    return Variable(obj)
+
+
+
 Variable.__mul__=mul
+Variable.__rmul__=mul
 Variable.__add__=add
+Variable.__radd__=add
