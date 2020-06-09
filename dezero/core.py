@@ -70,6 +70,9 @@ class Variable:
     def transpose(self):
         return dezero.functions.transpose(self)
     
+    def sum(self, axis=None, keepdims=False):
+        return dezero.functions.sum(self, axis, keepdims)
+        
     @property
     def T(self):
         return dezero.functions.transpose(self)
