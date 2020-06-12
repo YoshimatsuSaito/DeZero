@@ -8,7 +8,7 @@ class Layer:
         self._params = set()
 
     def __setattr__(self, name, value):
-        if isinstance(value, Parameter):
+        if isinstance(value, (Parameter, Layer)): # if the value is Parameter class or Layer class instance
             self._params.add(name)
         super().__setattr__(name, value) #super() means using parental class's method. But this method do not succeed any class?
 
@@ -25,7 +25,12 @@ class Layer:
 
     def params(self):
         for name in self._params:
-            yield self.__dict__[name]
+            obj = self.__dict__[name]
+
+            if isinstance(obj, Layer): # if obj is Layer class instance, 
+                yield from obj.params() # because obj instance is Layer class (this class itself) in this case, pbj.params call recursive treatment
+            else:
+                yield obj
     
     def cleargrads(self):
         for param in self.params():

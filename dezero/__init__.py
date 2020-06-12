@@ -20,5 +20,6 @@ else:
     import dezero.functions
     import dezero.utils
     from dezero.core import Parameter
+    from dezero.models import Model
 
 setup_variable()
