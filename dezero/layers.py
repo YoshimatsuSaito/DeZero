@@ -1,6 +1,6 @@
 from dezero.core import Parameter
 import weakref
-import numpy as numpy
+import numpy as np
 import dezero.functions as F 
 from dezero import cuda
 from dezero.utils import pair
@@ -59,7 +59,7 @@ class Layer:
     def save_weights(self, path):
         self.to_cpu()
 
-        params.dict = {}
+        params_dict = {}
         self._flatten_params(params_dict)
         array_dict = {key: param.data for key, param in params_dict.items() if param is not None}
 
@@ -93,7 +93,7 @@ class Linear(Layer):
         else:
             self.b = Parameter(np.zeros(out_size, dtype=dtype), name='b')
 
-    def _init_W(self):
+    def _init_W(self, xp=np):
         I, O = self.in_size, self.out_size
         W_data = xp.random.randn(I, O).astype(self.dtype) * np.sqrt(1 / I)
         self.W.data = W_data

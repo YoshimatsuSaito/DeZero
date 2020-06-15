@@ -69,8 +69,6 @@ class Spiral(Dataset):
     def prepare(self):
         self.data, self.label = get_spiral(self.train)
 
-        
-
 
 # =============================================================================
 # MNIST-like dataset: MNIST / CIFAR /

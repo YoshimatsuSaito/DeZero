@@ -1,5 +1,6 @@
-import numpy as np
+
 import weakref
+import numpy as np
 import contextlib
 import dezero
 try:
@@ -7,6 +8,7 @@ try:
     array_types = (np.ndarray, cupy.ndarray)
 except ImportError:
     array_types = (np.ndarray)
+
 
 
 class Variable:
@@ -120,9 +122,12 @@ class Variable:
         if self.data is not None:
             self.data = dezero.cuda.as_cupy(self.data)
 
-def as_array(x): #util functon used in Function class
+
+
+
+def as_array(x, array_module=np): #util functon used in Function class
     if np.isscalar(x):
-        return np.array(x)
+        return array_module.array(x)
     return x
 
 class Parameter(Variable):
@@ -234,18 +239,18 @@ class Pow(Function):
         return gx
 
 def add(x0,x1):
-    x1=as_array(x1)
+    x1=as_array(x1, dezero.cuda.get_array_module(x0.data))
     return Add()(x0,x1)
 
 def mul(x0,x1):
-    x1=as_array(x1)
+    x1=as_array(x1, dezero.cuda.get_array_module(x0.data))
     return Mul()(x0,x1)
 
 def neg(x):
     return Neg()(x)
 
 def sub(x0,x1):
-    x1=as_array(x1)
+    x1=as_array(x1, dezero.cuda.get_array_module(x0.data))
     return Sub()(x0,x1)
 
 def rsub(x0,x1):
@@ -253,11 +258,11 @@ def rsub(x0,x1):
     return Sub()(x1,x0)
 
 def div(x0,x1):
-    x1=as_array(x1)
+    x1=as_array(x1, dezero.cuda.get_array_module(x0.data))
     return Div()(x0,x1)
 
 def rdiv(x0,x1):
-    x1=as_array(x1)
+    x1=as_array(x1, dezero.cuda.get_array_module(x0.data))
     return Div()(x1,x0)
 
 def pow(x,c):
@@ -301,3 +306,4 @@ def setup_variable():
     Variable.__rtruediv__=div
     Variable.__pow__=pow
     Variable.__getitem__ = dezero.functions.get_item
+

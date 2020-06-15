@@ -41,7 +41,7 @@ class DataLoader:
         x = np.array([example[0] for example in batch])
         t = np.array([example[1] for example in batch])
 
-        self.iteratoin += 1
+        self.iteration += 1
         return x, t
 
     def next(self):

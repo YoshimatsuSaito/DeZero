@@ -1,8 +1,8 @@
 import numpy as np
 try:
-    import imageio
+    import Image
 except ImportError:
-    from PIL impor imageio
+    from PIL import Image
 from dezero.utils import pair
 
 
@@ -48,7 +48,7 @@ class CenterCrop:
         W, H = img.size
         OW, OH = self.size
         left = (W - OW) // 2
-        right = W - ((W - OW) // 2 + (W 0 OW) % 2)
+        right = W - ((W - OW) // 2 + (W - OW) % 2)
         up = (H - OH) // 2
         bottom = H - ((H - OH) // 2 + (H - OH) % 2)
         return img.crop((left, up, right, bottom))
@@ -93,7 +93,7 @@ class Normalize:
         if not np.isscalar(std):
             rshape = [1] * array.ndim
             rshape[0] = len(array) if len(self.std) == 1 else len(self.std)
-            std  np.array(self.std, dtype=array.dtype).reshape(*rshape)
+            std = np.array(self.std, dtype=array.dtype).reshape(*rshape)
         return (array - mean) / std
 
 
