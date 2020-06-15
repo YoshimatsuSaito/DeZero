@@ -2,11 +2,17 @@ import numpy as np
 import weakref
 import contextlib
 import dezero
+try:
+    import cupy
+    array_types = (np.ndarray, cupy.ndarray)
+except ImportError:
+    array_types = (np.ndarray)
+
 
 class Variable:
     def __init__(self,data,name=None):
         if data is not None:
-            if not isinstance(data, np.ndarray): #data (argument of variable class) must be np.ndarray
+            if not isinstance(data, array_types): #data (argument of variable class) must be np.ndarray
                 raise TypeError('{} is not supported'.format(type(data)))
 
         self.data=data #when user set argument (ex.Variable(np.array(3)), Variable class save the value (or vector))
@@ -23,7 +29,8 @@ class Variable:
 
     def backward(self, retain_grad=False, create_graph=False): 
         if self.grad is None: #backprobagation starts from final layer. and derivative of the value itself is 1.
-            self.grad = Variable(np.ones_like(self.data))
+            xp = dezero.cuda.get_array_module(self.data)
+            self.grad = Variable(xp.ones_like(self.data))
         
         funcs=[] #this list will have function of each steps. and will not have all functions used in the flow at the same time.
         seen_set=set()
@@ -105,11 +112,21 @@ class Variable:
     def __mul__(self,other): #this method should be in Variable class (not outside of this class)
         return mul(self,other) #this mul method is defined outside of this class (we defined this)
 
+    def to_cpu(self):
+        if self.data is not None:
+            self.data = dezero.cuda.as_numpy(self.data)
+    
+    def to_gpu(self):
+        if self.data is not None:
+            self.data = dezero.cuda.as_cupy(self.data)
+
 def as_array(x): #util functon used in Function class
     if np.isscalar(x):
         return np.array(x)
     return x
 
+class Parameter(Variable):
+    pass
 
 class Function: #this class is assumed to be succeeded
     def __call__(self, *inputs): #__call__ function gives method like usage of Function class. 
@@ -136,8 +153,6 @@ class Function: #this class is assumed to be succeeded
     
     def backward(self,gy): #likewise
         raise NotImplementedError()
-
-
 
 class Add(Function):
     def forward(self, x0, x1):
@@ -251,6 +266,7 @@ def pow(x,c):
 #whether doing derivative or not
 class Config:
     enable_backprop = True
+    train = True
 
 @contextlib.contextmanager 
 #this decolator make it enable that first preprocess (in this case, #1 and 2, before yield) 
@@ -259,10 +275,11 @@ class Config:
 def using_config(name, value):
     old_value=getattr(Config, name) #1
     setattr(Config, name, value) #2
-    try:
-        yield
-    finally:
-        setattr(Config, name, old_value) #3
+    yield
+    setattr(Config, name, old_value) #3
+
+def test_mode():
+    return using_config('train', False)
 
 def no_grad(): #util function. Coding "with using_config~~~" is wasteful. (see p130)
     return using_config('enable_backprop', False)
@@ -283,3 +300,4 @@ def setup_variable():
     Variable.__truediv__=div
     Variable.__rtruediv__=div
     Variable.__pow__=pow
+    Variable.__getitem__ = dezero.functions.get_item
